@@ -166,6 +166,7 @@ sample.tar
 database.gz
 data.gz
 backup.gz
+backup.sql.gz
 main.gz
 users.gz
 accounts.gz
